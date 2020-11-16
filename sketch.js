@@ -2,9 +2,12 @@ let video;
 let poseNet;
 let pose;
 let skeleton;
+let mic;
 
 function setup() {
     createCanvas(640, 480);
+    mic = new p5.AudioIn();
+    mic.start();
     
     video = createCapture(VIDEO);
     video.hide();
@@ -43,7 +46,7 @@ function draw() {
         let d = dist(rEye.x, rEye.y, lEye.x, lEye.y); 
         drawEyes(rEye, lEye, nose, d);
         
-        //nose
+    //NOSE
         push()
         fill(255, 0, 0)
         //ellipse(nose.x, nose.y, 5)
@@ -59,12 +62,12 @@ function draw() {
         pop()
         
         
-        //face
+    //FACE
         let dshould = dist(rShould.x, rShould.y, lShould.x, lShould.y);
         let chin = {
             x: betEyes.x,
             //a + (b-a/2)
-            y: ((nose.y + nose.y)/2) + (( ((rShould.y + lShould.y)/2) - ((nose.y + nose.y)/2))/2) + (d * 0.1)
+            y: findMid(((nose.y + nose.y)/2), ((rShould.y + lShould.y)/2), 2) + (d * 0.1)
         }
         push()
         fill(255,0,0)
@@ -76,7 +79,7 @@ function draw() {
             right: rEar.x + (d * 0.27),
             left: lEar.x - (d * 0.27),
             //a + (b-a/3.7)
-            y: ((nose.y + nose.y)/2) + (( ((rShould.y + lShould.y)/2) - ((nose.y + nose.y)/2))/3.7) + (d * 0.1)
+            y: findMid(nose.y, ((rShould.y + lShould.y)/2), 3.7) + (d * 0.1)
         }
         push()
         fill(255,0,0)
@@ -93,7 +96,7 @@ function draw() {
             left: lEar.x - 15,
             right: rEar.x + 15,
             //a + (b-a/2)
-            y: top.y + (((lEar.y + rEar.y)/2) - top.y) /2
+            y: findMid(top.y, ((lEar.y + rEar.y)/2), 2)
         }
         
         push()
@@ -103,7 +106,7 @@ function draw() {
 //        ellipse(temple.right, temple.y, 10)
         pop()
         
-        //Draw Face
+    //Draw Face
         push();
         noFill()
         beginShape();
@@ -117,6 +120,33 @@ function draw() {
         vertex(jaw.right, jaw.y);
         endShape(CLOSE);
         pop();
+        
+    //MOUTH
+        let corners = {
+            left: lEye.x - 10,
+            right: rEye.x + 10,
+            y: findMid(nose.y, chin.y, 2)
+        }
+        push()
+        //corners
+        fill(255,0,0)
+        ellipse(corners.left, corners.y, 10);
+        ellipse(corners.right, corners.y, 10);
+        pop()
+        let lips = {
+            up: corners.y,
+            down: corners.y, 
+            x: findMid(corners.left, corners.right, 2)
+        }
+        push();
+        
+        let sound = mic.getLevel();
+        print(sound);
+        //lips
+        fill(255,0,0)
+        ellipse(lips.x, lips.up - (sound * 5), 5);
+        ellipse(lips.x, lips.down + (sound * 5), 5);
+        pop()
         
     // Draw an ellipse on eack keypoint
 //    for (let i = 0; i < pose.keypoints.length; i++) {
@@ -210,9 +240,11 @@ function drawEyes(rEye, lEye, nose, d) {
     line(lEyeIn.x, lEyeIn.y, lEyeUp.x, lEyeUp.y);
     line(lEyeIn.x, lEyeIn.y, lEyeDown.x, lEyeDown.y);
 }
-function nosepasteye(rEye, lEye, nose) {
-
+function findMid(a, b, num) {
+    //num = 2 is between
+    return (a + ((b-a)/num));
 }
+
 function confidence(obj) {
     
 }
