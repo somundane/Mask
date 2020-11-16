@@ -32,10 +32,18 @@ function draw() {
         let rEye = pose.rightEye;
         let lEye = pose.leftEye;
         let nose = pose.nose;
+        let rEar = pose.rightEar;
+        let lEar = pose.leftEar
+        let rShould = pose.rightShoulder;
+        let lShould = pose.leftShoulder;
+        let betEyes = {
+            x: rEye.x + ((lEye.x - rEye.x)/2)
+        }
         //distance bet eyes
         let d = dist(rEye.x, rEye.y, lEye.x, lEye.y); 
         drawEyes(rEye, lEye, nose, d);
         
+        //nose
         push()
         fill(255, 0, 0)
         //ellipse(nose.x, nose.y, 5)
@@ -44,10 +52,72 @@ function draw() {
         noFill()
         stroke(255)
         strokeWeight(2)
+        //lower
         triangle(nose.x, nose.y + (d * 0.15), nose.x-(d*0.20), nose.y - (d * 0.05), nose.x+(d*0.20), nose.y - (d*0.05))
-        triangle(nose.x, (rEye.y + lEye.y)/2, nose.x-(d*0.20), nose.y - (d * 0.05), nose.x+(d*0.20), nose.y - (d*0.05))
+        //upper
+        triangle(betEyes.x, (rEye.y + lEye.y)/2, nose.x-(d*0.20), nose.y - (d * 0.05), nose.x+(d*0.20), nose.y - (d*0.05))
         pop()
-
+        
+        
+        //face
+        let dshould = dist(rShould.x, rShould.y, lShould.x, lShould.y);
+        let chin = {
+            x: betEyes.x,
+            //a + (b-a/2)
+            y: ((nose.y + nose.y)/2) + (( ((rShould.y + lShould.y)/2) - ((nose.y + nose.y)/2))/2) + (d * 0.1)
+        }
+        push()
+        fill(255,0,0)
+        //increase chin.y as dist decreases
+//        ellipse(chin.x, chin.y, 10)
+        pop()
+        
+        let jaw = {
+            right: rEar.x + (d * 0.27),
+            left: lEar.x - (d * 0.27),
+            //a + (b-a/3.7)
+            y: ((nose.y + nose.y)/2) + (( ((rShould.y + lShould.y)/2) - ((nose.y + nose.y)/2))/3.7) + (d * 0.1)
+        }
+        push()
+        fill(255,0,0)
+        //increase chin.y as dist decreases
+//        ellipse(jaw.right, jaw.y, 10)
+//        ellipse(jaw.left, jaw.y, 10)
+        pop()
+        
+        let top = {
+            x: betEyes.x,
+            y: (lEar.y + rEar.y)/2 - (lEar.x - rEar.x) /1.4
+        }
+        let temple = {
+            left: lEar.x - 15,
+            right: rEar.x + 15,
+            //a + (b-a/2)
+            y: top.y + (((lEar.y + rEar.y)/2) - top.y) /2
+        }
+        
+        push()
+        fill(255,0,0)
+//        ellipse(top.x, top.y, 10)
+//        ellipse(temple.left, temple.y, 10)
+//        ellipse(temple.right, temple.y, 10)
+        pop()
+        
+        //Draw Face
+        push();
+        noFill()
+        beginShape();
+        vertex(chin.x, chin.y);
+        vertex(jaw.left, jaw.y);
+        vertex(lEar.x, lEar.y);
+        vertex(temple.left, temple.y);
+        vertex(top.x, top.y);
+        vertex(temple.right, temple.y);
+        vertex(rEar.x, rEar.y);
+        vertex(jaw.right, jaw.y);
+        endShape(CLOSE);
+        pop();
+        
     // Draw an ellipse on eack keypoint
 //    for (let i = 0; i < pose.keypoints.length; i++) {
 //      let x = pose.keypoints[i].position.x;
@@ -139,6 +209,9 @@ function drawEyes(rEye, lEye, nose, d) {
     //left
     line(lEyeIn.x, lEyeIn.y, lEyeUp.x, lEyeUp.y);
     line(lEyeIn.x, lEyeIn.y, lEyeDown.x, lEyeDown.y);
+}
+function nosepasteye(rEye, lEye, nose) {
+
 }
 function confidence(obj) {
     
