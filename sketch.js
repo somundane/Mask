@@ -3,7 +3,7 @@ let poseNet;
 let pose;
 let skeleton;
 let mic;
-
+let bg;
 function setup() {
     createCanvas(640, 480);
     mic = new p5.AudioIn();
@@ -14,12 +14,22 @@ function setup() {
   
     poseNet = ml5.poseNet(video, modelLoaded);
     poseNet.on('pose', gotPoses);
+    
 }
 
 function modelLoaded() {
     console.log('poseNet ready');
+    bg = createButton('Switch');
+    bg.mousePressed(runSwitch);
+    bg.position(20, width * 0.80);
 }
-
+let off = false;
+function runSwitch(){
+    if(off == false)
+        off = true;
+    else
+        off = false;
+}
 function gotPoses(poses) {
   console.log(poses);
   if (poses.length > 0) {
@@ -27,10 +37,14 @@ function gotPoses(poses) {
     skeleton = poses[0].skeleton;
   }
 }
+let lEyeIn, rEyeIn, rEyeUp, rEyeDown, lEyeUp, lEyeDown, rEyeOut, lEyeOut;
+let eyenoseR, eyenoseL;
 
+let wristo = [];
 function draw() {
     image(video, 0, 0);
-    //background(0);
+    if(off == true)
+        background(0);
     if (pose) {
         let rEye = pose.rightEye;
         let lEye = pose.leftEye;
@@ -39,6 +53,26 @@ function draw() {
         let lEar = pose.leftEar
         let rShould = pose.rightShoulder;
         let lShould = pose.leftShoulder;
+        let rWrist = pose.rightWrist;
+        
+        if(rWrist.confidence > 0.3 && rWrist.x < width && rWrist.y < height) {
+            let o = {
+                x: rWrist.x,
+                y: rWrist.y, 
+                a: 255
+            }
+            wristo.push(o);  
+        }
+        
+        for(let obj of wristo) {
+            noStroke();
+            fill(255, obj.a)
+            ellipse(obj.x, obj.y, 30);
+            if(obj.a > 30)
+                obj.a -= 20;
+        }
+        
+        
         let betEyes = {
             x: rEye.x + ((lEye.x - rEye.x)/2)
         }
@@ -129,39 +163,139 @@ function draw() {
         }
         push()
         //corners
-        fill(255,0,0)
-        ellipse(corners.left, corners.y, 10);
-        ellipse(corners.right, corners.y, 10);
+//        fill(255,0,0)
+//        ellipse(corners.left, corners.y, 10);
+//        ellipse(corners.right, corners.y, 10);
         pop()
         let lips = {
             up: corners.y,
             down: corners.y, 
-            x: findMid(corners.left, corners.right, 2)
+            //x: findMid(corners.left, corners.right, 2)
+            x: nose.x
         }
         push();
         
         let sound = mic.getLevel();
+        let s = map(sound, 0, 0.09, 0, 10);
         print(sound);
-        //lips
+        //lips speaking
         fill(255,0,0)
-        ellipse(lips.x, lips.up - (sound * 5), 5);
-        ellipse(lips.x, lips.down + (sound * 5), 5);
-        //outer
-        ellipse(lips.x, lips.up - 12 - (sound * 5), 5);
-        ellipse(lips.x, lips.down + 17 + (sound * 5), 5);
-        
-        //peaks
-        ellipse(lips.x - 5, lips.up - 15 - (sound * 5), 5);
-        ellipse(lips.x + 5, lips.up - 15 - (sound * 5), 5);
+//        ellipse(lips.x, lips.up - s, 5);
+//        ellipse(lips.x, lips.down + s, 5);
+//        //outer
+//        ellipse(lips.x, lips.up - 12 - (sound * 5), 5);
+//        ellipse(lips.x, lips.down + 17 + (sound * 5), 5);
+//        
+//        //peaks
+//        ellipse(lips.x - 5, lips.up - 15 - (sound * 5), 5);
+//        ellipse(lips.x + 5, lips.up - 15 - (sound * 5), 5);
+        let peak = {
+            left: lips.x + 5,
+            right: lips.x - 5,
+            y: lips.up - 15 - (s * 5)
+        }
         pop()
         
-        let vol = mic.getLevel();
-      fill(127);
-      stroke(0);
+        //Draw Mouth
+        push();
+        noFill()
+        beginShape();
+        vertex(corners.left, corners.y);
+        vertex(peak.left, peak.y);
+        vertex(lips.x, lips.up - 12 - (s * 5));
+        vertex(peak.right, peak.y);
+        vertex(corners.right, corners.y);
+        vertex(lips.x, lips.down + 17 + (s * 5));
+        endShape(CLOSE);
+        pop();
+        
+        //upper
+        push();
+        noFill()
+        beginShape();
+        vertex(corners.left, corners.y);
+        vertex(lips.x, lips.up - s);
+        vertex(corners.right, corners.y);
+        endShape(CLOSE);
+        pop();
+        
+        //lower
+        push();
+        noFill()
+        beginShape();
+        vertex(corners.left, corners.y);
+        vertex(lips.x, lips.down + s);
+        vertex(corners.right, corners.y);
+        endShape(CLOSE);
+        pop();
+        
+        
+    //POLY EFFETCS
+        let extrapoint = {
+            x: nose.x,
+            y: findMid(top.y, (rEye.y + lEye.y)/2, 2)
+        };
+//        fill(0, 0, 255)
+//        ellipse(nose.x, extrapoint.y, 5)
+        
+        line(top.x, top.y, extrapoint.x, extrapoint.y)
+        line(extrapoint.x, extrapoint.y, betEyes.x, (rEye.y + lEye.y)/2)
+        
+        line(extrapoint.x, extrapoint.y, lEyeIn.x, lEyeIn.y)
+        line(extrapoint.x, extrapoint.y, rEyeIn.x, rEyeIn.y)
+        
+        line(extrapoint.x, extrapoint.y, temple.left, temple.y)
+        line(extrapoint.x, extrapoint.y, temple.right, temple.y)  
+        
+        line(temple.left, temple.y, lEyeUp.x, lEyeUp.y)
+        line(temple.right, temple.y, rEyeUp.x, rEyeUp.y)
+        
+        line(rEyeDown.x, rEyeDown.y, betEyes.x, (rEye.y + lEye.y)/2)
+        line(lEyeDown.x, lEyeDown.y, betEyes.x, (rEye.y + lEye.y)/2)
+        
+        line(rEyeIn.x, rEyeIn.y, betEyes.x, (rEye.y + lEye.y)/2)
+        line(lEyeIn.x, lEyeIn.y, betEyes.x, (rEye.y + lEye.y)/2)
+        
+        if(eyenoseR < eyenoseL) {
+            line(rEyeOut.x, rEyeOut.y, rEar.x, rEar.y)
+            line(lEyeOut.stillx, lEyeOut.stilly, lEar.x, lEar.y)
+            
+            line(rEyeOut.x, rEyeOut.y, jaw.right, jaw.y)
+            line(lEyeOut.stillx, lEyeOut.stilly, jaw.left, jaw.y)
+        }
+        else {
+            line(rEyeOut.stillx, rEyeOut.stilly, rEar.x, rEar.y)
+            line(lEyeOut.x, lEyeOut.y, lEar.x, lEar.y)
+            
+            line(rEyeOut.stillx, rEyeOut.stilly, jaw.right, jaw.y)
+            line(lEyeOut.x, lEyeOut.y, jaw.left, jaw.y)
+        }
+        
+        //jaw to nose
+        line(jaw.right, jaw.y, nose.x-(d*0.20), nose.y - (d * 0.05))
+        line(jaw.left, jaw.y, nose.x+(d*0.20), nose.y - (d * 0.05))
+        //jaw to mouthcorner
+        line(jaw.right, jaw.y, corners.right, corners.y)
+        line(jaw.left, jaw.y, corners.left, corners.y)
+        
+        //ear to nose
+        line(rEar.x, rEar.y, nose.x-(d*0.20), nose.y - (d * 0.05))
+        line(lEar.x, lEar.y, nose.x+(d*0.20), nose.y - (d * 0.05))
+        
+        //nose to mouth corner
+        line(corners.right, corners.y, nose.x-(d*0.20), nose.y - (d * 0.05))
+        line(corners.left, corners.y, nose.x+(d*0.20), nose.y - (d * 0.05))
+        
+        line(corners.right, corners.y, chin.x, chin.y)
+        line(corners.left, corners.y, chin.x, chin.y)
+        
+        line(nose.x, nose.y + (d * 0.15), lips.x, lips.up - 12 - (s * 5))
 
-      // Draw an ellipse with height based on volume
-      let h = map(vol, 0, 1, height, 0);
-      ellipse(width / 2, h - 25, 50, 50);
+        
+//        //more chaotoc version
+//        line(temple.left, temple.y, rEyeUp.x, rEyeUp.y)
+//        line(temple.right, temple.y, lEyeUp.x, lEyeUp.y)
+        
         
     // Draw an ellipse on eack keypoint
 //    for (let i = 0; i < pose.keypoints.length; i++) {
@@ -184,42 +318,42 @@ function drawEyes(rEye, lEye, nose, d) {
     
     let size = d * 0.20;
     
-    let eyenoseR = dist(rEye.x, 0, nose.x, 0);
-    let eyenoseL = dist(lEye.x, 0, nose.x, 0);
+    eyenoseR = dist(rEye.x, 0, nose.x, 0);
+    eyenoseL = dist(lEye.x, 0, nose.x, 0);
     
-    let rEyeIn ={
+    rEyeIn ={
         x: rEye.x + size,
         y: rEye.y
     }
-    let rEyeOut = {
+    rEyeOut = {
         x: rEye.x - eyenoseR * 0.50,
         y: rEye.y,
         stillx: rEye.x - size * 1.25,
         stilly: rEye.y
     }
-    let rEyeUp = {
+    rEyeUp = {
         x: rEye.x,
         y: rEye.y - size/2
     }
-    let rEyeDown = {
+    rEyeDown = {
         x: rEye.x,
         y: rEye.y + size/2
     }
-    let lEyeIn = {
+    lEyeIn = {
         x: lEye.x - size,
         y: lEye.y
     }
-    let lEyeOut = {
+    lEyeOut = {
         x: lEye.x + eyenoseL * 0.50,
         y: lEye.y,
         stillx: lEye.x + size * 1.25,
         stilly: lEye.y
     }
-    let lEyeUp = {
+    lEyeUp = {
         x: lEye.x,
         y: lEye.y - size/2
     }
-    let lEyeDown = {
+    lEyeDown = {
         x: lEye.x,
         y: lEye.y + size/2
     }
@@ -259,10 +393,5 @@ function findMid(a, b, num) {
     //num = 2 is between
     return (a + ((b-a)/num));
 }
-
-function confidence(obj) {
-    
-}
-
 
 
