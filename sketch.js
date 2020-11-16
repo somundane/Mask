@@ -146,7 +146,22 @@ function draw() {
         fill(255,0,0)
         ellipse(lips.x, lips.up - (sound * 5), 5);
         ellipse(lips.x, lips.down + (sound * 5), 5);
+        //outer
+        ellipse(lips.x, lips.up - 12 - (sound * 5), 5);
+        ellipse(lips.x, lips.down + 17 + (sound * 5), 5);
+        
+        //peaks
+        ellipse(lips.x - 5, lips.up - 15 - (sound * 5), 5);
+        ellipse(lips.x + 5, lips.up - 15 - (sound * 5), 5);
         pop()
+        
+        let vol = mic.getLevel();
+      fill(127);
+      stroke(0);
+
+      // Draw an ellipse with height based on volume
+      let h = map(vol, 0, 1, height, 0);
+      ellipse(width / 2, h - 25, 50, 50);
         
     // Draw an ellipse on eack keypoint
 //    for (let i = 0; i < pose.keypoints.length; i++) {
