@@ -43,20 +43,30 @@ function setup() {
     poseNet.on('pose', gotPoses);
     
 }
-
+let text;
+let text2;
+let text3;
 function modelLoaded() {
     console.log('poseNet ready');
-    bg = createButton('Switch');
-    bg.mousePressed(runSwitch);
-    bg.position(20, width * 0.80);
+//    bg = createButton('Switch');
+//    bg.mousePressed(runSwitch);
+//    bg.position(20, width * 0.80);
+    text = createElement('h2', 'Tilt your head up to change state.');
+    text.position(30, height);
+    
+    text2 = createElement('h2', 'Move head side to side to change eyes.');
+    text2.position(30, height + 20);
+    
+    text3 = createElement('h2', 'Step back and show both wrists to firebend(ish).');
+    text3.position(30, height + 40);
 }
 let off = false;
-function runSwitch(){
-    if(off == false)
-        off = true;
-    else
-        off = false;
-}
+//function runSwitch(){
+//    if(off == false)
+//        off = true;
+//    else
+//        off = false;
+//}
 function gotPoses(poses) {
   console.log(poses);
   if (poses.length > 0) {
@@ -69,15 +79,13 @@ let eyenoseR, eyenoseL;
 
 let wristo = [];
 
+let state = "video";
+let changestate = false;
 function draw() {
+    strokeWeight(2)
+    stroke(255)
     image(video, 0, 0);
-    
-    if(off == true) {
-        background(0);
-        fill(180);
-        drawASCII();
-    }
-    if (pose) {
+    if (pose) {        
         let rEye = pose.rightEye;
         let lEye = pose.leftEye;
         let nose = pose.nose;
@@ -86,21 +94,56 @@ function draw() {
         let rShould = pose.rightShoulder;
         let lShould = pose.leftShoulder;
         let rWrist = pose.rightWrist;
-        
-        if(rWrist.confidence > 0.3 && rWrist.x < width && rWrist.y < height) {
+        let lWrist = pose.leftWrist;
+        //distance bet eyes
+        let d = dist(rEye.x, rEye.y, lEye.x, lEye.y); 
+        if(nose.y <= ((lEye.y + rEye.y)/2) + d*0.1 && changestate == false) {
+            if(state == "video")
+                state = "black";
+            else if(state == "black")
+                state = "ASCII";
+            else if(state == "ASCII")
+                state = "video";
+            changestate = true;
+        }
+        if(nose.y > ((lEye.y + rEye.y)/2) + d*0.1 && changestate == true) {
+            changestate = false;
+        }
+        if(state == "black") {
+            background(0);
+            fill(180);
+        }
+        else if(state == "ASCII") {
+            background(0);
+            fill(180);
+            drawASCII();
+        }
+      
+//push();
+//    translate(nose.x, nose.y)
+//    let rot = atan2(mouseY - nose.y, mouseX - nose.x);   
+//    rotate(rot);
+//    push();
+//    translate(-nose.x, -nose.y)
+        if(rWrist.confidence > 0.3 && lWrist.confidence > 0.3 && rWrist.x < width && rWrist.y < height) {
             let o = {
-                x: rWrist.x,
-                y: rWrist.y, 
-                a: 255
+                x: (rWrist.x + lWrist.x)/2,
+                y: (rWrist.y + lWrist.y)/2, 
+                a: 200,
+                s: dist(rWrist.x, rWrist.y, lWrist.x, lWrist.y) * 0.8
             }
             wristo.push(o);  
         }
         
         for(let obj of wristo) {
+            push()
             noStroke();
-            fill(255, obj.a)
-            ellipse(obj.x, obj.y, 30);
-            if(obj.a > 30)
+            fill(255, 160, 120, obj.a)
+            ellipse(obj.x, obj.y, obj.s);
+            pop();
+            if(obj.s > 0)
+                obj.s -=5;
+            if(obj.a > 0) 
                 obj.a -= 20;
         }
         
@@ -108,9 +151,11 @@ function draw() {
         let betEyes = {
             x: rEye.x + ((lEye.x - rEye.x)/2)
         }
-        //distance bet eyes
-        let d = dist(rEye.x, rEye.y, lEye.x, lEye.y); 
+        let c = map(nose.x, rEye.x, lEye.x, 0, 255);
+        push();
+        fill(c)
         drawEyes(rEye, lEye, nose, d);
+        pop();
         
     //NOSE
         push()
@@ -135,25 +180,12 @@ function draw() {
             //a + (b-a/2)
             y: findMid(((nose.y + nose.y)/2), ((rShould.y + lShould.y)/2), 2) + (d * 0.1)
         }
-        push()
-        fill(255,0,0)
-        //increase chin.y as dist decreases
-//        ellipse(chin.x, chin.y, 10)
-        pop()
-        
         let jaw = {
             right: rEar.x + (d * 0.27),
             left: lEar.x - (d * 0.27),
             //a + (b-a/3.7)
             y: findMid(nose.y, ((rShould.y + lShould.y)/2), 3.7) + (d * 0.1)
         }
-        push()
-        fill(255,0,0)
-        //increase chin.y as dist decreases
-//        ellipse(jaw.right, jaw.y, 10)
-//        ellipse(jaw.left, jaw.y, 10)
-        pop()
-        
         let top = {
             x: betEyes.x,
             y: (lEar.y + rEar.y)/2 - (lEar.x - rEar.x) /1.4
@@ -167,9 +199,6 @@ function draw() {
         
         push()
         fill(255,0,0)
-//        ellipse(top.x, top.y, 10)
-//        ellipse(temple.left, temple.y, 10)
-//        ellipse(temple.right, temple.y, 10)
         pop()
         
     //Draw Face
@@ -193,12 +222,7 @@ function draw() {
             right: rEye.x + 10,
             y: findMid(nose.y, chin.y, 2)
         }
-        push()
-        //corners
-//        fill(255,0,0)
-//        ellipse(corners.left, corners.y, 10);
-//        ellipse(corners.right, corners.y, 10);
-        pop()
+
         let lips = {
             up: corners.y,
             down: corners.y, 
@@ -209,18 +233,10 @@ function draw() {
         
         let sound = mic.getLevel();
         let s = map(sound, 0, 0.09, 0, 10);
-        print(sound);
+        //print(sound);
         //lips speaking
         fill(255,0,0)
-//        ellipse(lips.x, lips.up - s, 5);
-//        ellipse(lips.x, lips.down + s, 5);
-//        //outer
-//        ellipse(lips.x, lips.up - 12 - (sound * 5), 5);
-//        ellipse(lips.x, lips.down + 17 + (sound * 5), 5);
-//        
-//        //peaks
-//        ellipse(lips.x - 5, lips.up - 15 - (sound * 5), 5);
-//        ellipse(lips.x + 5, lips.up - 15 - (sound * 5), 5);
+
         let peak = {
             left: lips.x + 5,
             right: lips.x - 5,
@@ -267,8 +283,6 @@ function draw() {
             x: nose.x,
             y: findMid(top.y, (rEye.y + lEye.y)/2, 2)
         };
-//        fill(0, 0, 255)
-//        ellipse(nose.x, extrapoint.y, 5)
         
         line(top.x, top.y, extrapoint.x, extrapoint.y)
         line(extrapoint.x, extrapoint.y, betEyes.x, (rEye.y + lEye.y)/2)
@@ -322,32 +336,15 @@ function draw() {
         line(corners.left, corners.y, chin.x, chin.y)
         
         line(nose.x, nose.y + (d * 0.15), lips.x, lips.up - 12 - (s * 5))
-
-        
-//        //more chaotoc version
-//        line(temple.left, temple.y, rEyeUp.x, rEyeUp.y)
-//        line(temple.right, temple.y, lEyeUp.x, lEyeUp.y)
-        
-        
-    // Draw an ellipse on eack keypoint
-//    for (let i = 0; i < pose.keypoints.length; i++) {
-//      let x = pose.keypoints[i].position.x;
-//      let y = pose.keypoints[i].position.y;
-//      fill(0, 255, 0);
-//      ellipse(x, y, 16, 16);
-//    }
+//    pop();
+//pop();
 
   }
     
 }
 
 function drawEyes(rEye, lEye, nose, d) {
-    
-    
     stroke(255);
-    //line(rEye.x, rEye.y, lEye.x, lEye.y);
-    fill(255, 0, 0);
-    
     let size = d * 0.20;
     
     eyenoseR = dist(rEye.x, 0, nose.x, 0);
@@ -394,32 +391,39 @@ function drawEyes(rEye, lEye, nose, d) {
     //check which has less dist & apply
     if(eyenoseR < eyenoseL) {
         //right
-        line(rEyeOut.x, rEyeOut.y, rEyeDown.x, rEyeDown.y);
-        line(rEyeOut.x, rEyeOut.y, rEyeUp.x, rEyeUp.y);
+        beginShape();
+        vertex(rEyeUp.x, rEyeUp.y);
+        vertex(rEyeOut.x, rEyeOut.y);
+        vertex(rEyeDown.x, rEyeDown.y);
+        vertex(rEyeIn.x, rEyeIn.y);
+        endShape(CLOSE);
         
         //left
-        line(lEyeOut.stillx, lEyeOut.stilly, lEyeDown.x, lEyeDown.y);
-        line(lEyeOut.stillx, lEyeOut.stilly, lEyeUp.x, lEyeUp.y);
+        beginShape();
+        vertex(lEyeUp.x, lEyeUp.y);
+        vertex(lEyeOut.stillx, lEyeOut.stilly);
+        vertex(lEyeDown.x, lEyeDown.y);
+        vertex(lEyeIn.x, lEyeIn.y);
+        endShape(CLOSE);
     }
     else {
         //right
-        line(rEyeOut.stillx, rEyeOut.stilly, rEyeDown.x, rEyeDown.y);
-        line(rEyeOut.stillx, rEyeOut.stilly, rEyeUp.x, rEyeUp.y);
-            
-        //left
-        line(lEyeOut.x, lEyeOut.y, lEyeUp.x, lEyeUp.y);
-        line(lEyeOut.x, lEyeOut.y, lEyeDown.x, lEyeDown.y);
-    }
-    //let outReye = size * 1.25;
+        beginShape();
+        vertex(rEyeUp.x, rEyeUp.y);
+        vertex(rEyeOut.stillx, rEyeOut.stilly);
+        vertex(rEyeDown.x, rEyeDown.y);
+        vertex(rEyeIn.x, rEyeIn.y);
+        endShape(CLOSE);
         
-    //inner lines
-    //right
-    line(rEyeIn.x, rEyeIn.y, rEyeDown.x, rEyeDown.y);
-    line(rEyeIn.x, rEyeIn.y, rEyeUp.x, rEyeUp.y);
-            
-    //left
-    line(lEyeIn.x, lEyeIn.y, lEyeUp.x, lEyeUp.y);
-    line(lEyeIn.x, lEyeIn.y, lEyeDown.x, lEyeDown.y);
+        //left
+        beginShape();
+        vertex(lEyeUp.x, lEyeUp.y);
+        vertex(lEyeOut.x, lEyeOut.y);
+        vertex(lEyeDown.x, lEyeDown.y);
+        vertex(lEyeIn.x, lEyeIn.y);
+        endShape(CLOSE);
+    }
+
 }
 function findMid(a, b, num) {
     //num = 2 is between
