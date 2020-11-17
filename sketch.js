@@ -4,6 +4,30 @@ let pose;
 let skeleton;
 let mic;
 let bg;
+
+//ASCII ART STUFF
+var myAsciiArt;
+var asciiart_width = 140;
+var asciiart_height = 70;
+var duplicate;
+
+function setupASCII(video){
+ video.elt.setAttribute('playsinline', '');
+    duplicate = createGraphics(asciiart_width, asciiart_height);
+    duplicate.pixelDensity(1);
+    myAsciiArt = new AsciiArt(this);
+    //myAsciiArt.printWeightTable();
+    textAlign(CENTER, CENTER); textFont('monospace', 6); textStyle(NORMAL);
+//    noStroke();
+}
+function drawASCII() {
+    duplicate.background(0);
+    duplicate.image(video, 0, 0, duplicate.width, duplicate.height);
+    duplicate.filter(POSTERIZE, 5);
+    ascii_arr = myAsciiArt.convert(duplicate);
+    
+    myAsciiArt.typeArray2d(ascii_arr, this)
+}
 function setup() {
     createCanvas(640, 480);
     mic = new p5.AudioIn();
@@ -11,6 +35,9 @@ function setup() {
     
     video = createCapture(VIDEO);
     video.hide();
+    
+    //ASCII ART setup
+    setupASCII(video);
   
     poseNet = ml5.poseNet(video, modelLoaded);
     poseNet.on('pose', gotPoses);
@@ -41,10 +68,15 @@ let lEyeIn, rEyeIn, rEyeUp, rEyeDown, lEyeUp, lEyeDown, rEyeOut, lEyeOut;
 let eyenoseR, eyenoseL;
 
 let wristo = [];
+
 function draw() {
     image(video, 0, 0);
-    if(off == true)
+    
+    if(off == true) {
         background(0);
+        fill(180);
+        drawASCII();
+    }
     if (pose) {
         let rEye = pose.rightEye;
         let lEye = pose.leftEye;
